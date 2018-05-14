@@ -9,26 +9,32 @@ from sklearn import svm
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors.nearest_centroid import NearestCentroid
 from nltk import FreqDist
+from sklearn.feature_extraction import FeatureHasher
 
 import curses
 from curses.ascii import isdigit
 import nltk
 from nltk.corpus import cmudict
 import re
-
+import math
 import hashlib
 lancaster_stemmer = LancasterStemmer()
 ohe = OneHotEncoder()
 d = cmudict.dict()
+hasher = FeatureHasher(input_type='string')
 
-def frequencyMetric(trainset):
+pos_dict = {}
+
+
+def convertToNumber (s):
+    return int.from_bytes(s.encode(), 'little')
+
+def getPreprocessed(trainset):
     words = ""
     for sent in trainset:
         words += sent['sentence']
 
-    tokens = nltk.word_tokenize(words)
-    fdist=FreqDist(tokens)
-    return fdist
+    return words
 
 def number_synonyms(word):
     synonyms = []
@@ -60,37 +66,30 @@ class Baseline(object):
         # self.model = svm.SVC()
         self.model = MLPClassifier()
 
-    def extract_features(self, word, sent, fdist):
+    def extract_features(self, word, sent):
         len_chars = len(word) / self.avg_word_length
         len_tokens = len(word.split(' '))
         no_syllables_list = nsyl(word)
-        # pos_tag = nltk.pos_tag([word])
+        pos_tag = nltk.pos_tag([word])[0][1]
         no_syllables = sum(no_syllables_list)
-        freq = fdist.freq(word)
         no_synonyms, no_antonyms = number_synonyms(word)
         len_lemma = len(lancaster_stemmer.stem(word))
-
-        return [len_chars, len_tokens, no_antonyms, no_synonyms, len_lemma, no_syllables]
+        return [len_chars, len_tokens, convertToNumber(pos_tag)]
 
     def train(self, trainset):
         X = []
         y = []
-        fdist = frequencyMetric(trainset)
         for sent in trainset:
 
-            X.append(self.extract_features(sent['target_word'],sent, fdist))
+            X.append(self.extract_features(sent['target_word'],sent))
             y.append(sent['gold_label'])
 
         self.model.fit(X, y)
 
 
-
-
-
     def test(self, testset):
-        fdist = frequencyMetric(testset)
         X = []
         for sent in testset:
-            X.append(self.extract_features(sent['target_word'],testset,fdist))
+            X.append(self.extract_features(sent['target_word'],testset))
 
         return self.model.predict(X)
