@@ -13,9 +13,10 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors.nearest_centroid import NearestCentroid
 from nltk import FreqDist
 from sklearn.feature_extraction import FeatureHasher
-
+from collections import Counter
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import ShuffleSplit
+from sklearn.svm import SVC
 
 import matplotlib.pyplot as plt
 from sklearn.metrics import explained_variance_score, make_scorer
@@ -29,38 +30,37 @@ import re
 import math
 import hashlib
 
-
 lancaster_stemmer = LancasterStemmer()
-ohe = OneHotEncoder()
 d = cmudict.dict()
 hasher = FeatureHasher(input_type='string')
 
 pos_dict = {}
 
-scrabble_scores = {"a": 1, "b": 3,"c": 3, "d": 2, "e": 1, "g": 2,
-          "f": 4, "i": 1, "h": 4, "k": 5, "j": 8, "m": 3,
-          "l": 1, "o": 1, "n": 1, "q": 10, "p": 3, "s": 1,
-          "r": 1, "u": 1, "t": 1, "w": 4, "v": 4, "y": 4,
-          "x": 8, "z": 10}
+letter_scores = {"z":5,"j":4,"x":4,"Q":3,"k":2,"v":1}
 
-def score_scrabble(word):
+def get_frequencies(data):
+    freqs = {}
+    for sent in data:
+        sentence = sent["sentence"]
+        target_word = sent["target_word"]
+        if target_word in freqs:
+            freqs[target_word] += 1
+        else:
+            freqs[target_word] =1
+
+    return freqs
+
+def score_letters(word):
     total = 0
     for l in word:
-        if l in scrabble_scores:
-            total += scrabble_scores[l]
+        if l in letter_scores:
+            total += letter_scores[l]
     return total
 
 def convertToNumber(s):
     return int.from_bytes(s.encode(), 'little')
 
-def getPreprocessed(trainset):
-    words = ""
-    for sent in trainset:
-        words += sent['sentence']
-
-    return words
-
-def number_synonyms(word):
+def number_nyms(word):
     synonyms = []
     antonyms = []
     for syn in wordnet.synsets(word):
@@ -105,7 +105,7 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     plt.legend(loc="best")
     return plt
 
-class Baseline(object):
+class Improved(object):
 
     def __init__(self, language):
         self.language = language
@@ -115,9 +115,11 @@ class Baseline(object):
         else:  # spanish
             self.avg_word_length = 6.2
 
-        self.model = LogisticRegression()
+        self.model = RandomForestClassifier()
 
-    def extract_features(self, word, sent):
+
+
+    def extract_features(self, word, sent, freqs):
 
         feature = []
 
@@ -130,28 +132,37 @@ class Baseline(object):
         # Number of syllables in word
         no_syllables = nsyl(word)
 
-        # Length of the lemma
+        # Part of speech tag of word
+        pos_tag = convertToNumber(nltk.pos_tag([word])[0][1])
+
+        no_synonyms, no_antonyms = number_nyms(word)
+
         len_lemma = len(lancaster_stemmer.stem(word))
 
-        return [len_chars, len_tokens, len_lemma]
+        letter_score = score_letters(word)
+
+        word_freq = freqs[word]
+
+        return [len_chars, len_tokens, len_lemma, word_freq, no_syllables]
 
     def train(self, trainset):
         X = []
         y = []
+        freqs = get_frequencies(trainset)
+
         for sent in trainset:
-            X.append(self.extract_features(sent['target_word'],sent))
+            X.append(self.extract_features(sent['target_word'],sent,freqs))
             y.append(sent['gold_label'])
 
         self.model.fit(X, y)
-
-        # cv = ShuffleSplit(n_splits=10, test_size=0.2, random_state=0)
-        # plot_learning_curve(self.model, "LogisticRegression", X, y, ylim=(0, 1), cv=cv, n_jobs=4)
-
+    
         plt.show()
 
     def test(self, testset):
         X = []
+        freqs = get_frequencies(testset)
+
         for sent in testset:
-            X.append(self.extract_features(sent['target_word'],testset))
+            X.append(self.extract_features(sent['target_word'],sent, freqs))
 
         return self.model.predict(X)

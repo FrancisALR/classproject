@@ -3,7 +3,7 @@ import sklearn
 
 def report_score(gold_labels, predicted_labels, detailed=False):
     macro_F1 = sklearn.metrics.f1_score(gold_labels, predicted_labels, average='macro')
-    print("macro-F1: {:.2f}".format(macro_F1))
+    print("macro-F1: {:.3f}".format(macro_F1))
     if detailed:
         scores = sklearn.metrics.precision_recall_fscore_support(gold_labels, predicted_labels)
         print("{:^10}{:^10}{:^10}{:^10}{:^10}".format("Label", "Precision", "Recall", "F1", "Support"))
