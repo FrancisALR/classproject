@@ -1,4 +1,8 @@
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.tree import DecisionTreeClassifier
+
+
 from nltk.stem.lancaster import LancasterStemmer
 from nltk.corpus import wordnet
 
@@ -103,7 +107,7 @@ class Improved(object):
         else:  # spanish
             self.avg_word_length = 6.2
 
-        self.model = RandomForestClassifier()
+        self.model = MLPClassifier(learning_rate_init = 0.0001)
 
     def extract_features(self, word, sent, freqs):
 
@@ -129,7 +133,7 @@ class Improved(object):
 
         word_freq = freqs[word]
 
-        return [len_chars, len_tokens, len_lemma, word_freq, no_syllables]
+        return [len_chars, len_tokens, len_lemma, word_freq,letter_score, no_syllables, no_synonyms]
 
     def train(self, trainset):
         X = []
