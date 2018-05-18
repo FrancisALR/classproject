@@ -1,23 +1,11 @@
-from sklearn.linear_model import LogisticRegression, BayesianRidge, LassoLars
-from sklearn.naive_bayes import GaussianNB
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.tree import DecisionTreeClassifier
 from nltk.stem.lancaster import LancasterStemmer
 from nltk.corpus import wordnet
-from sklearn.linear_model import SGDClassifier
-from sklearn import svm
-from sklearn.neural_network import MLPClassifier
-from sklearn.neighbors.nearest_centroid import NearestCentroid
-from nltk import FreqDist
+
 from sklearn.feature_extraction import FeatureHasher
 from collections import Counter
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import ShuffleSplit
-from sklearn.svm import SVC
-
 import matplotlib.pyplot as plt
 from sklearn.metrics import explained_variance_score, make_scorer
 from sklearn.cross_validation import KFold
@@ -47,7 +35,6 @@ def get_frequencies(data):
             freqs[target_word] += 1
         else:
             freqs[target_word] =1
-
     return freqs
 
 def score_letters(word):
@@ -72,10 +59,11 @@ def number_nyms(word):
 
 def nsyl(word):
     if word in d:
-        return sum([len(list(y for y in x if isdigit(y[-1]))) for x in d[word.lower()]])
+        return sum([len(list(i for i in j if isdigit(i[-1]))) for j in d[word.lower()]])
     else:
         return sum([0])
 
+# Code from scikit-learn http://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
                         n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
     plt.figure()
@@ -117,8 +105,6 @@ class Improved(object):
 
         self.model = RandomForestClassifier()
 
-
-
     def extract_features(self, word, sent, freqs):
 
         feature = []
@@ -155,7 +141,7 @@ class Improved(object):
             y.append(sent['gold_label'])
 
         self.model.fit(X, y)
-    
+
         plt.show()
 
     def test(self, testset):
